@@ -1,0 +1,143 @@
+---
+title: "viz-part-01"
+author: "Binyue Hu"
+date: "2022-10-04"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Let's import data
+
+```{r}
+library(tidyverse)
+library(ggridges)
+```
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+Let's make a scatterplot 
+
+```{r}
+ggplot(weather_df, aes(x = tmin, y = tmax)) + geom_point()
+```
+
+let's make the same scatterplot different 
+
+```{r}
+weather_df %>%
+  drop_na() %>%
+  filter(name == "CentralPark_NY") %>%
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point()
+```
+
+Let's keep making the same plot but different 
+
+```{r}
+
+plot_weather = 
+  weather_df %>%
+  drop_na() %>%
+  ggplot(aes(x = tmin, y = tmax)) 
+
+plot_weather + geom_point()
+
+```
+
+
+## Let's fancy this up a bit
+
+```{r}
+ggplot(weather_df, aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name))
+```
+
+上面这段code和下面这段code是同一个意思,下面这段code里的这个`smooth`函数让ggplot里多了一条线来体现整体的趋势
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name)) +
+  geom_smooth()
+```
+
+👇 This code remove `color = name`from `geom_point`to `ggplot`, it causes that different names with different colors have different smooth lines. 
+`alpha ` changes the transparancy of points 
+`se = FALSE` is get rid of error bar 
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) + 
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE)
+```
+
+use `facet_grid` to make separate panels 
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) + 
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE) +
+   facet_grid(. ~ name)
+# left side of "~" defines rows and right side of "~" defines column 
+```
+
+`tmax` vs ` tmin` is boring, let's spice it up some. 
+we change the x-aix into date 
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = date, y = tmax, color = name)) + 
+  geom_point(alpha = .3) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name)
+
+```
+
+we change the color equal to percipitation 
+```{r}
+weather_df %>%
+  ggplot(aes(x = date, y = tmax, color = prcp)) + 
+  geom_point(alpha = .3) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name)
+
+```
+
+we keep both color equal to name and use size of point to show the percipitation 
+```{r}
+ weather_df %>%
+  ggplot(aes(x = date, y = tmax, color = name)) + 
+  geom_point(aes(size = prcp), alpha = .3) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name)
+```
+
+## some quick stuff
+
+```{r}
+ggplot(weather_df, aes(x = tmax, y = tmin)) + 
+  geom_hex()
+```
+
+
