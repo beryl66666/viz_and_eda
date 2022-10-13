@@ -20,6 +20,7 @@ library(tidyverse)
 
 ``` r
 library(ggridges)
+library(patchwork)
 ```
 
 ``` r
@@ -159,3 +160,108 @@ ggp_temp_plot +
     ## Warning: Removed 15 rows containing missing values (geom_point).
 
 ![](viz_part02_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+## Data in geom()
+
+``` r
+central_park = 
+  weather_df %>% 
+  filter(name == "CentralPark_NY")
+
+waikiki = 
+  weather_df %>% 
+  filter(name == "Waikiki_HA")
+
+ggplot(data = waikiki, aes(x = date, y = tmax, color = name)) + 
+  geom_point() + 
+  geom_line(data = central_park)
+```
+
+    ## Warning: Removed 3 rows containing missing values (geom_point).
+
+![](viz_part02_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+## Patchwork…
+
+``` r
+tmax_tmin_p = 
+  weather_df %>% 
+  ggplot(aes(x = tmax, y = tmin, color = name)) + 
+  geom_point(alpha = .5) +
+  theme(legend.position = "none")
+
+prcp_dens_p = 
+  weather_df %>% 
+  filter(prcp > 0) %>% 
+  ggplot(aes(x = prcp, fill = name)) + 
+  geom_density(alpha = .5) + 
+  theme(legend.position = "none")
+
+tmax_date_p = 
+  weather_df %>% 
+  ggplot(aes(x = date, y = tmax, color = name)) + 
+  geom_point(alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  theme(legend.position = "bottom")
+
+(tmax_tmin_p + prcp_dens_p) / tmax_date_p
+```
+
+    ## Warning: Removed 15 rows containing missing values (geom_point).
+
+    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+
+    ## Warning: Removed 3 rows containing non-finite values (stat_smooth).
+
+    ## Warning: Removed 3 rows containing missing values (geom_point).
+
+![](viz_part02_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+## Data manipulation
+
+``` r
+weather_df %>%
+  mutate(name = forcats::fct_relevel(name, c("Waikiki_HA", "CentralPark_NY", "Waterhole_WA"))) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+    ## Warning: Removed 3 rows containing non-finite values (stat_ydensity).
+
+![](viz_part02_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+weather_df %>%
+  mutate(name = forcats::fct_reorder(name, tmax)) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+    ## Warning: Removed 3 rows containing non-finite values (stat_ydensity).
+
+![](viz_part02_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+pulse_data = 
+  haven::read_sas("./data/public_pulse_data.sas7bdat") %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit", 
+    names_prefix = "bdi_score_",
+    values_to = "bdi") %>%
+  select(id, visit, everything()) %>%
+  mutate(
+    visit = recode(visit, "bl" = "00m"),
+    visit = factor(visit, levels = str_c(c("00", "01", "06", "12"), "m"))) %>%
+  arrange(id, visit)
+
+ggplot(pulse_data, aes(x = visit, y = bdi)) + 
+  geom_boxplot()
+```
+
+    ## Warning: Removed 879 rows containing non-finite values (stat_boxplot).
+
+![](viz_part02_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
