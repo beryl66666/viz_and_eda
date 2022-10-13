@@ -34,5 +34,102 @@ weather_df =
   select(name, id, everything())
 ```
 
+## `group_by()`
 
+```{r}
+weather_df %>%
+  group_by(name,month)
+```
+
+## `summarize()`
+
+let's group and then summarize!
+
+```{r}
+weather_df %>%
+  group_by(month) %>%
+  summarize(n_obs = n())
+```
+
+can we count in other ways?
+
+```{r}
+weather_df %>%
+  count(name)
+```
+
+!!! don't use `table()` 
+
+```{r eval = FALSE}
+weather_df %>%
+  pull(month) %>% 
+  table
+```
+
+you can have multiple summaries, we use `distinct()` to count the number of distinct values 
+
+```{r}
+weather_df %>%
+  group_by(month) %>%
+  summarize(
+    n_obs = n(),
+    n_days = n_distinct(date)
+    )
+```
+
+
+## a brief aside on 2x2 tables 
+
+```{r}
+weather_df %>% 
+  mutate(
+    cold = case_when(
+      tmax <  5 ~ "cold",
+      tmax >= 5 ~ "not_cold",
+      TRUE      ~ ""
+  )) %>% 
+  filter(name != "Waikiki_HA") %>% 
+  group_by(name, cold) %>% 
+  summarize(count = n())
+```
+
+the last line 'TRUE' in case_when function is the default thing to make sure 
+every value in the data frame is counted and not be left. 
+```{r}
+weather_df %>% 
+  mutate(cold = case_when(
+    tmax <  5 ~ "cold",
+    tmax >= 5 ~ "not_cold",
+    TRUE     ~ ""
+  )) %>% 
+  filter(name != "Waikiki_HA") %>% 
+  janitor::tabyl(name, cold)
+```
+
+## General Summaries 
+
+```{r}
+weather_df %>%
+  group_by(month) %>%
+  summarize(
+    mean_tmax = mean(tmax),
+    mean_prec = mean(prcp, na.rm = TRUE),
+    median_tmax = median(tmax),
+    sd_tmax = sd(tmax))
+```
+
+```{r}
+weather_df %>%
+  group_by(name, month) %>%
+  summarize(across(tmin:prcp, mean))
+```
+
+```{r}
+weather_df %>%
+  group_by(name, month) %>%
+  summarize(mean_tmax = mean(tmax)) %>%
+  ggplot(aes(x = month, y = mean_tmax, color = name)) + 
+    geom_point() + geom_line() + 
+    theme(legend.position = "bottom")
+```
 
